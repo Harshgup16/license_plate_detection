@@ -1,81 +1,174 @@
-# 🚗 LicenseLens — Indian License Plate Detection & Recognition
-
 <div align="center">
 
+<br/>
+
+```
+██████╗ ██╗      █████╗ ████████╗███████╗    ███████╗ ██████╗ █████╗ ███╗   ██╗
+██╔══██╗██║     ██╔══██╗╚══██╔══╝██╔════╝    ██╔════╝██╔════╝██╔══██╗████╗  ██║
+██████╔╝██║     ███████║   ██║   █████╗      ███████╗██║     ███████║██╔██╗ ██║
+██╔═══╝ ██║     ██╔══██║   ██║   ██╔══╝      ╚════██║██║     ██╔══██║██║╚██╗██║
+██║     ███████╗██║  ██║   ██║   ███████╗    ███████║╚██████╗██║  ██║██║ ╚████║
+╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+```
+
+### 🚗 Real-time Indian License Plate Detection & OCR — powered by YOLOv8 + EasyOCR
+
+<br/>
+
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-FF6B35?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PC9zdmc+)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-FF6B35?style=for-the-badge)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.x-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![EasyOCR](https://img.shields.io/badge/EasyOCR-1.7%2B-00C49A?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-F7B731?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-CPU%20%7C%20GPU-informational?style=for-the-badge)
 
-**Real-time Indian vehicle license plate detection, OCR, and recognition from video streams — powered by YOLOv8 and EasyOCR.**
+<br/>
 
-[Features](#-features) · [Demo](#-demo) · [Installation](#-installation) · [Training](#-training-your-own-model) · [Usage](#-usage) · [How It Works](#-how-it-works) · [Project Structure](#-project-structure)
+> Feed it a traffic video. Get back a fully annotated output with every license plate detected, cropped, read, and stamped — frame by frame.
+
+<br/>
+
+[**Features**](#-features) · [**How It Works**](#-how-it-works) · [**Installation**](#-installation) · [**Usage**](#-usage) · [**Training**](#-train-your-own-model) · [**Project Structure**](#-project-structure) · [**Troubleshooting**](#-troubleshooting)
+
+---
 
 </div>
 
----
+<br/>
 
-## 📸 Demo
-
-> The system detects license plates in each video frame, zooms into the plate region, reads the text via OCR, and overlays the corrected plate number directly on the video.
+## 📸 What Does It Do?
 
 ```
-Input:  traffic_video.mp4
-Output: annotated video with bounding boxes + plate number overlay
-        e.g.  ┌──────────────┐
-              │  MH12AB1234  │  ← stable, corrected OCR result
-              └──────────────┘
-              [  plate crop  ]
-                ┌──────────┐
-                │ vehicle  │
-                └──────────┘
+  ┌──────────────────────────────────────────────────┐
+  │          traffic_video.mp4  (input)               │
+  │                                                  │
+  │   ┌─────────────────────────────────┐            │
+  │   │  ██████████████████████████████ │ ← zoomed   │
+  │   │  ██  MH 12 AB 1234  ███████████ │   plate    │
+  │   │  ██████████████████████████████ │   crop     │
+  │   └─────────────────────────────────┘            │
+  │                                                  │
+  │   MH12AB1234   ← stable OCR overlay              │
+  │   ┌──────────────────────┐                       │
+  │   │                      │  ← bounding box       │
+  │   │      [vehicle]       │                       │
+  │   │                      │                       │
+  │   └──────────────────────┘                       │
+  └──────────────────────────────────────────────────┘
+              ↓
+  output_with_license.mp4  (annotated output)
 ```
 
----
+<br/>
 
 ## ✨ Features
 
-| Feature | Details |
-|---|---|
-| 🔍 **Plate Detection** | Fine-tuned YOLOv8n on ~30k Indian plate images |
-| 🔤 **OCR** | EasyOCR with English-only mode + Otsu thresholding + 2× upscaling |
-| 🇮🇳 **Format Correction** | Enforces `AA00AAA` pattern; auto-corrects common digit/letter confusions (`0↔O`, `1↔I`, `5↔S`, `8↔B`) |
-| 📊 **Stability Tracking** | Rolling window of 10 frames; picks the most-frequent reading per plate region |
-| 🎬 **Video Pipeline** | Frame-by-frame processing with annotated output video |
-| ⚡ **Lightweight** | YOLOv8 **nano** — runs on CPU; GPU optional |
+| | Feature | Details |
+|---|---|---|
+| 🔍 | **Plate Detection** | Fine-tuned YOLOv8n on ~30k Indian vehicle plate images |
+| 🔤 | **Optical Character Recognition** | EasyOCR in English-only mode with Otsu thresholding + 2× upscaling |
+| 🇮🇳 | **Format Auto-Correction** | Enforces `AA00AAA` Indian plate pattern; fixes digit/letter confusions |
+| 🔁 | **Confusion Mapping** | Auto-corrects `0↔O`, `1↔I`, `5↔S`, `8↔B` based on position in plate |
+| 📊 | **Stability Tracking** | Rolling 10-frame deque with majority-vote for rock-solid OCR results |
+| 🎬 | **Full Video Pipeline** | Frame-by-frame processing with zoomed plate overlay in output |
+| ⚡ | **Lightweight** | YOLOv8 **nano** — runs on CPU; GPU-optional for faster inference |
 
----
+<br/>
+
+## ⚙️ How It Works
+
+The pipeline has four clean stages:
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                                                                    │
+│   VIDEO FRAME                                                      │
+│       │                                                            │
+│       ▼                                                            │
+│  ┌──────────────┐     conf ≥ 0.3                                  │
+│  │  YOLOv8 nano │ ──────────────────► bounding boxes (x1,y1,x2,y2)│
+│  └──────────────┘                                                  │
+│       │                                                            │
+│       ▼                                                            │
+│  ┌──────────────────────────────────┐                             │
+│  │ OpenCV Preprocessing             │                             │
+│  │  → Grayscale                     │                             │
+│  │  → Otsu Thresholding             │                             │
+│  │  → 2× Bicubic Upscale            │                             │
+│  └──────────────────────────────────┘                             │
+│       │                                                            │
+│       ▼                                                            │
+│  ┌──────────────────────────────────┐                             │
+│  │ EasyOCR                          │                             │
+│  │  allowlist: A–Z  0–9             │                             │
+│  └──────────────────────────────────┘                             │
+│       │                                                            │
+│       ▼                                                            │
+│  ┌──────────────────────────────────┐                             │
+│  │ Format Corrector + Regex Check   │                             │
+│  │  enforce AA00AAA pattern         │                             │
+│  │  fix 0↔O, 1↔I, 5↔S, 8↔B         │                             │
+│  │  validate ^[A-Z]{2}[0-9]{2}[A-Z]{3}$                          │
+│  └──────────────────────────────────┘                             │
+│       │                                                            │
+│       ▼                                                            │
+│  ┌──────────────────────────────────┐                             │
+│  │ Stability Tracker                │                             │
+│  │  deque(maxlen=10) per box_id     │                             │
+│  │  → most-frequent valid reading   │                             │
+│  └──────────────────────────────────┘                             │
+│       │                                                            │
+│       ▼                                                            │
+│   ANNOTATED FRAME  ──►  OUTPUT VIDEO                              │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### 🇮🇳 Indian Plate Format
+
+This project targets the standard **BH / State code** format used across India:
+
+```
+  M  H  1  2  A  B  1  2  3  4
+  └──┘  └──┘  └──┘  └──────────┘
+ State  RTO  Series    Number
+
+  7-character short code:  MH12AB1  (AA + 00 + AAA)
+```
+
+<br/>
 
 ## 🛠 Installation
 
-### 1. Clone the repository
+### 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/licenselens.git
-cd licenselens
+git clone https://github.com/Harshgup16/license_plate_detection.git
+cd license_plate_detection
 ```
 
-### 2. Create a virtual environment (recommended)
+### 2 — Create a Virtual Environment *(recommended)*
 
 ```bash
 python -m venv venv
+
 # Windows
 venv\Scripts\activate
+
 # macOS / Linux
 source venv/bin/activate
 ```
 
-### 3. Install dependencies
+### 3 — Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
 <details>
-<summary>📋 <strong>requirements.txt</strong> (click to expand)</summary>
+<summary>📋 <strong>requirements.txt</strong></summary>
 
-```txt
+```
 ultralytics>=8.0.0
 easyocr>=1.7.0
 opencv-python>=4.8.0
@@ -84,62 +177,59 @@ numpy>=1.24.0
 
 </details>
 
-### 4. Download / place the model weights
+### 4 — Add Model Weights
 
-Place your trained weights file at the root of the project:
+Place your trained weights file at the project root:
 
 ```
-licenselens/
-└── license_plate_best.pt   ← put it here
+license_plate_detection/
+└── license_plate_best.pt   ← required
 ```
 
-> Don't have weights yet? See [Training Your Own Model](#-training-your-own-model) below.
+> No weights yet? See [Train Your Own Model](#-train-your-own-model) below.
 
----
+<br/>
 
 ## 🚀 Usage
 
-### Basic — process a video file
+### Run the Detection Pipeline
 
 ```bash
-python detect.py
+python app.py
 ```
 
-By default the script reads `input.mp4` from the current directory and writes the annotated result to the path configured in `output_video`.
+### Configure Input / Output
 
-### Configure input / output paths
-
-Open `detect.py` and edit these two lines near the top of the *Video I/O* section:
+Open `app.py` and update these lines near the bottom of the file:
 
 ```python
-input_video  = "input.mp4"          # ← your source video
-output_video = "output_plates.mp4"  # ← where to save results
+input_video  = "input.mp4"              # ← path to your source video
+output_video = "output_with_license.mp4"  # ← where to save the result
 ```
 
-### Tune the confidence threshold
+### Tune the Confidence Threshold
 
 ```python
-CONF_THRESH = 0.3   # raise to reduce false positives (0–1)
+CONF_THRESH = 0.3   # raise → fewer false positives (range: 0.0–1.0)
 ```
 
-### Run and watch progress
+### Watch Progress
 
 ```
 Video opened: 1920x1080 @ 30.0fps | Total frames: 450
 Processing frame 142/450
+Done! Output saved to: output_with_license.mp4
 ```
 
-The annotated video is saved automatically when processing finishes.
+<br/>
 
----
+## 🧠 Train Your Own Model
 
-## 🧠 Training Your Own Model
+### Step 1 — Get a Dataset
 
-### 1. Get the dataset (Roboflow)
+Head to [roboflow.com](https://roboflow.com), find an **Indian License Plate** dataset, and export in **YOLOv8 format**.
 
-Sign in at [roboflow.com](https://roboflow.com), find an Indian license plate dataset, and export it in **YOLOv8 format**. The training snippet below uses the Roboflow `dataset.location` variable directly.
-
-### 2. Train
+### Step 2 — Train
 
 ```python
 from ultralytics import YOLO
@@ -149,132 +239,92 @@ model = YOLO("yolov8n.pt")   # start from pretrained nano weights
 
 results = model.train(
     data=dataset.location + "/data.yaml",
-    epochs=1,          # increase for better accuracy (50–100 recommended)
+    epochs=50,          # 50–100 recommended for good accuracy
     imgsz=640,
     batch=32,
     workers=4,
-    device=0,          # 0 = first GPU; "cpu" for CPU-only
+    device=0,           # 0 = first GPU  |  "cpu" for CPU-only
     cache=True,
-    fraction=0.3       # use 30% of dataset (~30k images) — adjust as needed
+    fraction=0.3        # use 30 % of dataset (~30k images)
 )
 
-# Save the best weights
+# Save best weights
 os.makedirs("saved_models", exist_ok=True)
-shutil.copy(str(results.save_dir) + "/weights/best.pt",
-            "saved_models/license_plate_best.pt")
-shutil.copy(str(results.save_dir) + "/weights/last.pt",
-            "saved_models/license_plate_last.pt")
-
-print("✅ Weights saved in saved_models/")
+shutil.copy(f"{results.save_dir}/weights/best.pt", "saved_models/license_plate_best.pt")
+print("✅ Weights saved to saved_models/license_plate_best.pt")
 ```
 
-### 3. Use your trained weights
-
-Copy `saved_models/license_plate_best.pt` to the project root and rename it `license_plate_best.pt`, or update the path in `detect.py`:
+### Step 3 — Use Your Weights
 
 ```python
+# In app.py, update the model path:
 model = YOLO("saved_models/license_plate_best.pt")
 ```
 
----
+> The repo already ships with `license_plate_best.pt` — pre-trained on ~30k Indian plate images.
 
-## ⚙️ How It Works
-
-```
-Video Frame
-    │
-    ▼
-┌─────────────────────┐
-│   YOLOv8 Detection  │  → bounding boxes (x1,y1,x2,y2) + confidence
-└─────────────────────┘
-    │  conf ≥ 0.3
-    ▼
-┌─────────────────────┐
-│   Plate Crop + Pre- │  grayscale → Otsu threshold → 2× upscale
-│   processing (OpenCV│
-└─────────────────────┘
-    │
-    ▼
-┌─────────────────────┐
-│   EasyOCR           │  allowlist: A-Z 0-9
-└─────────────────────┘
-    │
-    ▼
-┌──────────────────────────┐
-│  Format Correction       │  enforce AA00AAA; fix 0↔O, 1↔I, 5↔S, 8↔B
-│  + Regex Validation      │  ^[A-Z]{2}[0-9]{2}[A-Z]{3}$
-└──────────────────────────┘
-    │
-    ▼
-┌──────────────────────────┐
-│  Stability Tracker       │  rolling deque(maxlen=10) per plate region
-│  (deque + majority vote) │  → most-frequent valid reading
-└──────────────────────────┘
-    │
-    ▼
-  Annotated Frame → Output Video
-```
-
-### Plate format assumption
-
-This project targets the standard **Indian vehicle registration** format:
-
-```
-  R  A  J  0  1  A  B  1  2  3  4
-  └──┘  └──┘  └──┘  └──────────┘
-  State  RTO   Series   Number
-```
-
-The 7-character short code captured here follows the pattern **`AA00AAA`** (two letters, two digits, three letters).
-
----
+<br/>
 
 ## 📁 Project Structure
 
 ```
-licenselens/
-├── detect.py                  # main detection + OCR pipeline
-├── license_plate_best.pt      # trained YOLOv8 weights (you provide)
-├── input.mp4                  # source video (you provide)
-├── output_with_licensev3.mp4  # annotated output (generated)
-├── requirements.txt
-└── README.md
+license_plate_detection/
+│
+├── app.py                        # 🔧 Main detection + OCR pipeline
+├── number_plate_opencv.ipynb     # 📓 Training & experimentation notebook
+├── license_plate_best.pt         # 🤖 Trained YOLOv8n weights
+│
+├── input.mp4                     # 🎬 Source video (you provide)
+├── output_with_licensev3.mp4     # 🎥 Annotated output (auto-generated)
+│
+├── requirements.txt              # 📦 Python dependencies
+└── README.md                     # 📖 You are here
 ```
 
----
+<br/>
 
 ## 🔧 Troubleshooting
 
-| Problem | Fix |
+| Symptom | Fix |
 |---|---|
-| `Error: Video file not found` | Check the `input_video` path in `detect.py` |
-| OCR reads garbage text | Lower lighting / motion blur degrades results; try raising `CONF_THRESH` |
-| Very slow processing | Switch `gpu=False` → `gpu=True` in `easyocr.Reader` if CUDA is available |
-| Wrong plate format | The corrector assumes **7-character Indian plates**; adapt `correct_plate_format()` for other formats |
-| `ModuleNotFoundError` | Run `pip install -r requirements.txt` inside your activated virtual environment |
+| `Error: Video file not found` | Update `input_video` path in `app.py` |
+| OCR reads garbage characters | Motion blur / poor lighting degrades results; also try increasing `CONF_THRESH` |
+| Very slow processing | Set `gpu=True` in `easyocr.Reader(...)` if CUDA is available |
+| Wrong plate format / no match | The corrector assumes 7-char Indian plates; adapt `correct_plate_format()` for other regional formats |
+| `ModuleNotFoundError` | Run `pip install -r requirements.txt` inside your **activated** virtual environment |
+| Output video won't play | Ensure `mp4v` codec is supported; try changing `fourcc` to `avc1` for H.264 |
 
----
+<br/>
 
 ## 🤝 Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+Pull requests are welcome! For larger changes, please open an issue first.
 
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/improve-ocr`
-3. Commit your changes: `git commit -m 'feat: improve OCR preprocessing'`
-4. Push to the branch: `git push origin feature/improve-ocr`
-5. Open a Pull Request
+```bash
+# 1. Fork & clone
+git checkout -b feature/your-improvement
 
----
+# 2. Make changes, then commit
+git commit -m "feat: describe your improvement"
+
+# 3. Push and open a PR
+git push origin feature/your-improvement
+```
+
+<br/>
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for details.
+
+<br/>
 
 ---
 
 <div align="center">
 
-Made with ❤️ for Indian roads · Star ⭐ the repo if it helped you!
+Made with ❤️ for Indian roads
+
+⭐ Star the repo if it helped you!
 
 </div>
